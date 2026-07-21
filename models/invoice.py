@@ -1,9 +1,13 @@
 from __future__ import annotations
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+if TYPE_CHECKING:
+    from models.customer import Customer
+    from models.employee import Employee
+    from models.saleline import SaleLine
 from database.database import Base
 
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from decimal import Decimal
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from models.invoice import Invoice
 from sqlalchemy import Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
