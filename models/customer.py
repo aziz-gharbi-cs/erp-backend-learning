@@ -4,6 +4,7 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.database import Base
 
+from sqlalchemy import String
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -35,6 +36,10 @@ class Customer(Base):
     address: Mapped[str | None] = mapped_column(
         String(300),
         nullable=True,
+    )
+    phone_number: Mapped[str | None] = mapped_column(
+    String(20),
+    nullable=True
     )
 
     tax_registration_number: Mapped[str | None] = mapped_column(
