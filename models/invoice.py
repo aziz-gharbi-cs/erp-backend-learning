@@ -59,7 +59,16 @@ class Invoice(Base):
 
     # ---------- Relationships ----------
 
+    customer: Mapped["Customer"] = relationship(
+        back_populates="invoices",
+    )
+
+    employee: Mapped["Employee"] = relationship(
+        back_populates="invoices",
+    )
+
     sale_lines: Mapped[list["SaleLine"]] = relationship(
+        back_populates="invoice",
         cascade="all, delete-orphan",
     )
 

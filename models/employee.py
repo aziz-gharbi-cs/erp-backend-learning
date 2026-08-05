@@ -38,6 +38,10 @@ class Employee(Base):
         nullable=False,
     )
 
+    invoices: Mapped[list["Invoice"]] = relationship(
+        back_populates="employee",
+    )
+
     def __str__(self):
         return (
             f"Employee("

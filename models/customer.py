@@ -51,6 +51,10 @@ class Customer(Base):
         nullable=True,
     )
 
+    invoices: Mapped[list["Invoice"]] = relationship(
+        back_populates="customer",
+    )
+
     def __str__(self):
         return (
             f"Customer("

@@ -29,6 +29,14 @@ class SaleLine(Base):
         nullable=True,
     )
 
+    invoice: Mapped["Invoice"] = relationship(
+        back_populates="sale_lines",
+    )
+
+    product: Mapped["Product | None"] = relationship(
+        back_populates="sale_lines",
+    )
+
     # ---------- Snapshot ----------
 
     product_name: Mapped[str] = mapped_column(
