@@ -14,39 +14,41 @@ def create_product():
         try:
             while True:
                 reference = input("Reference: ").strip()
+                if reference:
+                    break
+                print("Reference cannot be empty.")
 
-                if not reference:
-                    print("Reference cannot be empty.")
-                    continue
+            while True:
+                name = input("Product Name: ").strip()
+                if name:
+                    break
+                print("Product name cannot be empty.")
 
-                if repo.get_by_reference(reference):
-                    print("Reference already exists.")
-                    continue
-
-                break
-
-            name = input("Product Name (optional): ").strip() or None
             description = input("Description (optional): ").strip() or None
 
             while True:
-                price_input = input("Unit Price (Excl. Tax): ").strip()
+                unit_price_input = input("Unit Price: ").strip()
 
                 try:
-                    unit_price_excl_tax = Decimal(price_input)
+                    unit_price = Decimal(unit_price_input)
 
-                    if unit_price_excl_tax >= 0:
+                    if unit_price >= 0:
                         break
 
-                    print("Price cannot be negative.")
+                    print("Unit price cannot be negative.")
 
                 except InvalidOperation:
-                    print("Invalid price.")
+                    print("Invalid unit price.")
 
             while True:
-                tax_input = input("Tax Rate (%): ").strip()
+                tax_rate_input = input("Tax Rate (optional, default 0): ").strip()
+
+                if not tax_rate_input:
+                    tax_rate = Decimal("0.00")
+                    break
 
                 try:
-                    tax_rate = Decimal(tax_input)
+                    tax_rate = Decimal(tax_rate_input)
 
                     if tax_rate >= 0:
                         break
@@ -57,8 +59,10 @@ def create_product():
                     print("Invalid tax rate.")
 
             while True:
+                stock_input = input("Stock Quantity: ").strip()
+
                 try:
-                    stock_quantity = int(input("Stock Quantity: "))
+                    stock_quantity = int(stock_input)
 
                     if stock_quantity >= 0:
                         break
@@ -72,22 +76,20 @@ def create_product():
                 reference=reference,
                 name=name,
                 description=description,
-                unit_price_excl_tax=unit_price_excl_tax,
+                unit_price_excl_tax=unit_price,
                 tax_rate=tax_rate,
                 stock_quantity=stock_quantity,
             )
 
             repo.save(product)
-
             session.commit()
 
-            print("Product created successfully.")
-
+            print(product)
             return product
 
         except IntegrityError:
             session.rollback()
-            print("Error: A product with this reference already exists.")
+            print("Error: A product with the same unique information already exists.")
 
         except Exception:
             session.rollback()
