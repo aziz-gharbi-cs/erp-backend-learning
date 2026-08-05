@@ -1,6 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-
-from database.database import SessionLocal
+from sqlalchemy.orm import Session
 
 from models.invoice import Invoice
 from models.saleline import SaleLine
@@ -11,143 +10,87 @@ from repositories.invoice_repository import InvoiceRepository
 from repositories.product_repository import ProductRepository
 
 
-def create_invoice():
-    with SessionLocal() as session:
-        invoice_repo = InvoiceRepository(session)
-        customer_repo = CustomerRepository(session)
-        employee_repo = EmployeeRepository(session)
-        product_repo = ProductRepository(session)
+class InvoiceService:
+    def __init__(self, session: Session):
+        self.session = session
+        self.invoice_repo = InvoiceRepository(session)
+        self.customer_repo = CustomerRepository(session)
+        self.employee_repo = EmployeeRepository(session)
+        self.product_repo = ProductRepository(session)
 
-        try:
-            # ---------- Customer ----------
+    def create_invoice(
+        self,
+        customer_id: int,
+        employee_id: int,
+        invoice_number: str,
+        sale_lines_data: list[dict],
+    ) -> Invoice:
+        """
+        Creates a new invoice after validating business rules.
+        """
 
-            while True:
-                try:
-                    customer_id = int(input("Customer ID: "))
-                    break
-                except ValueError:
-                    print("Invalid customer ID.")
+        customer = self.customer_repo.get_by_id(customer_id)
+        if customer is None:
+            raise ValueError("Customer not found.")
 
-            customer = customer_repo.get_by_id(customer_id)
+        employee = self.employee_repo.get_by_id(employee_id)
+        if employee is None:
+            raise ValueError("Employee not found.")
 
-            if customer is None:
-                print("Customer not found.")
-                return
+        if not invoice_number or not invoice_number.strip():
+            raise ValueError("Invoice number cannot be empty.")
 
-            # ---------- Employee ----------
+        invoice = Invoice(
+            invoice_number=invoice_number.strip(),
+            invoice_type="Sale",
+            status="Draft",
+            customer=customer,
+            employee=employee,
+        )
 
-            while True:
-                try:
-                    employee_id = int(input("Employee ID: "))
-                    break
-                except ValueError:
-                    print("Invalid employee ID.")
+        for line_data in sale_lines_data:
+            product_id = line_data.get("product_id")
+            quantity = line_data.get("quantity")
 
-            employee = employee_repo.get_by_id(employee_id)
+            product = self.product_repo.get_by_id(product_id)
+            if product is None:
+                raise ValueError(f"Product with ID {product_id} not found.")
 
-            if employee is None:
-                print("Employee not found.")
-                return
+            if quantity <= 0:
+                raise ValueError("Quantity must be greater than zero.")
 
-            # ---------- Invoice ----------
-
-            while True:
-                invoice_number = input("Invoice Number: ").strip()
-
-                if invoice_number:
-                    break
-
-                print("Invoice number cannot be empty.")
-
-            invoice = Invoice(
-                invoice_number=invoice_number,
-                invoice_type="Sale",
-                status="Draft",
-                customer=customer,
-                employee=employee,
+            sale_line = SaleLine(
+                product=product,
+                product_name=product.name,
+                product_description=product.description,
+                unit_price_excl_tax=product.unit_price_excl_tax,
+                tax_rate=product.tax_rate,
+                quantity=quantity,
+                discount_rate=line_data.get("discount_rate", 0),
             )
 
-            # ---------- Sale Lines ----------
+            invoice.sale_lines.append(sale_line)
 
-            while True:
-                product_id_input = input("Product ID (press Enter to finish): ").strip()
+        if not invoice.sale_lines:
+            raise ValueError("An invoice must contain at least one sale line.")
 
-                if product_id_input == "":
-                    break
-
-                try:
-                    product_id = int(product_id_input)
-                except ValueError:
-                    print("Invalid product ID.")
-                    continue
-
-                product = product_repo.get_by_id(product_id)
-
-                if product is None:
-                    print("Product not found.")
-                    continue
-
-                while True:
-                    try:
-                        quantity = int(input("Quantity: "))
-
-                        if quantity > 0:
-                            break
-
-                        print("Quantity must be greater than zero.")
-
-                    except ValueError:
-                        print("Invalid quantity.")
-
-                sale_line = SaleLine(
-                    product=product,
-                    product_name=product.name,
-                    product_description=product.description,
-                    unit_price_excl_tax=product.unit_price_excl_tax,
-                    tax_rate=product.tax_rate,
-                    quantity=quantity,
-                    discount_rate=0,
-                )
-
-                invoice.sale_lines.append(sale_line)
-
-            if not invoice.sale_lines:
-                print("An invoice must contain at least one sale line.")
-                return
-
-            invoice_repo.save(invoice)
-
-            session.commit()
-
-            print("Invoice created successfully.")
-
+        try:
+            self.invoice_repo.save(invoice)
+            self.session.commit()
             return invoice
 
-        except IntegrityError:
-            session.rollback()
-            print("Could not create invoice due to a database constraint.")
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise ValueError(
+                "Could not create invoice due to a database constraint."
+            ) from exc
 
         except Exception:
-            session.rollback()
+            self.session.rollback()
             raise
 
+    def list_invoices(self) -> list[Invoice]:
+        return self.invoice_repo.get_all()
 
-def list_invoices():
-    with SessionLocal() as session:
-        repo = InvoiceRepository(session)
-        invoices = repo.get_all()
-
-    if not invoices:
-        print("No invoices found.")
-        return
-
-    for invoice in invoices:
-        print("\n" + "=" * 80)
-        print(invoice)
-
-        if invoice.sale_lines:
-            print("\nSale Lines:")
-            for line in invoice.sale_lines:
-                print(f"  {line}")
-
-        print("=" * 80)
+    def get_invoice(self, invoice_id: int) -> Invoice | None:
+        return self.invoice_repo.get_by_id(invoice_id)

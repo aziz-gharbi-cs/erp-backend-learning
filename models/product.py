@@ -56,12 +56,6 @@ class Product(Base):
         default=0,
     )
 
-    # ---------- Relationships ----------
-
-    sale_lines: Mapped[list["SaleLine"]] = relationship(
-        back_populates="product",
-    )
-
     def __str__(self):
         return (
             f"Product("
