@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models.employee import Employee
+from models.employee import Employee, EmployeeRole
 from repositories.employee_repository import EmployeeRepository
 
 
@@ -15,8 +15,12 @@ class EmployeeService:
     def create_employee(
         self,
         name: str,
+        username: str,
+        password: str,
         job_title: str | None = None,
         monthly_salary: Decimal | None = None,
+        is_active: bool = True,
+        role: EmployeeRole = EmployeeRole.EMPLOYEE,
     ) -> Employee:
         """
         Creates a new employee after validating business rules.
@@ -25,13 +29,24 @@ class EmployeeService:
         if not name or not name.strip():
             raise ValueError("Employee name cannot be empty.")
 
+        if not username or not username.strip():
+            raise ValueError("Username cannot be empty.")
+
+        if not password or not password.strip():
+            raise ValueError("Password cannot be empty.")
+
         if monthly_salary is not None and monthly_salary < 0:
             raise ValueError("Monthly salary cannot be negative.")
 
+        # TODO: hash password in the JWT milestone.
         employee = Employee(
             name=name.strip(),
+            username=username.strip(),
+            password_hash=password.strip(),
             job_title=job_title.strip() if job_title else None,
             monthly_salary=monthly_salary,
+            is_active=is_active,
+            role=role,
         )
 
         try:
@@ -42,7 +57,7 @@ class EmployeeService:
         except IntegrityError as exc:
             self.session.rollback()
             raise ValueError(
-                "An employee with this name already exists."
+                "An employee with this username already exists."
             ) from exc
 
         except Exception:
@@ -59,8 +74,12 @@ class EmployeeService:
         self,
         employee_id: int,
         name: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
         job_title: str | None = None,
         monthly_salary: Decimal | None = None,
+        is_active: bool | None = None,
+        role: EmployeeRole | None = None,
     ) -> Employee:
         employee = self.repo.get_by_id(employee_id)
         if employee is None:
@@ -71,6 +90,17 @@ class EmployeeService:
                 raise ValueError("Employee name cannot be empty.")
             employee.name = name.strip()
 
+        if username is not None:
+            if not username.strip():
+                raise ValueError("Username cannot be empty.")
+            employee.username = username.strip()
+
+        if password is not None:
+            if not password.strip():
+                raise ValueError("Password cannot be empty.")
+            # TODO: hash password in the JWT milestone.
+            employee.password_hash = password.strip()
+
         if job_title is not None:
             employee.job_title = job_title.strip() if job_title else None
 
@@ -79,6 +109,12 @@ class EmployeeService:
                 raise ValueError("Monthly salary cannot be negative.")
             employee.monthly_salary = monthly_salary
 
+        if is_active is not None:
+            employee.is_active = is_active
+
+        if role is not None:
+            employee.role = role
+
         try:
             self.repo.update(employee)
             self.session.commit()
@@ -86,7 +122,7 @@ class EmployeeService:
         except IntegrityError as exc:
             self.session.rollback()
             raise ValueError(
-                "An employee with this name already exists."
+                "An employee with this username already exists."
             ) from exc
         except Exception:
             self.session.rollback()

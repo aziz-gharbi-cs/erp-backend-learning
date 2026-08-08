@@ -145,8 +145,11 @@ def list_employees(db: Session = Depends(get_db)) -> list[EmployeeResponse]:
         EmployeeResponse(
             id=employee.id,
             name=employee.name,
+            username=employee.username,
             job_title=employee.job_title,
             monthly_salary=employee.monthly_salary,
+            is_active=employee.is_active,
+            role=employee.role,
         )
         for employee in employees
     ]
@@ -158,16 +161,23 @@ def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db
     try:
         employee = service.create_employee(
             name=payload.name,
+            username=payload.username,
+            password=payload.password,
             job_title=payload.job_title,
             monthly_salary=payload.monthly_salary,
+            is_active=payload.is_active,
+            role=payload.role,
         )
     except ValueError as exc:
         _service_error_response(exc)
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
+        username=employee.username,
         job_title=employee.job_title,
         monthly_salary=employee.monthly_salary,
+        is_active=employee.is_active,
+        role=employee.role,
     )
 
 
@@ -180,8 +190,11 @@ def get_employee(employee_id: int, db: Session = Depends(get_db)) -> EmployeeRes
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
+        username=employee.username,
         job_title=employee.job_title,
         monthly_salary=employee.monthly_salary,
+        is_active=employee.is_active,
+        role=employee.role,
     )
 
 
@@ -192,16 +205,23 @@ def update_employee(employee_id: int, payload: EmployeeUpdateRequest, db: Sessio
         employee = service.update_employee(
             employee_id=employee_id,
             name=payload.name,
+            username=payload.username,
+            password=payload.password,
             job_title=payload.job_title,
             monthly_salary=payload.monthly_salary,
+            is_active=payload.is_active,
+            role=payload.role,
         )
     except ValueError as exc:
         _service_error_response(exc)
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
+        username=employee.username,
         job_title=employee.job_title,
         monthly_salary=employee.monthly_salary,
+        is_active=employee.is_active,
+        role=employee.role,
     )
 
 

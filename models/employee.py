@@ -1,12 +1,21 @@
 from __future__ import annotations
 from decimal import Decimal
+from enum import Enum
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from models.invoice import Invoice
-from sqlalchemy import Numeric, String
+
+from sqlalchemy import Enum as SAEnum, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.database import Base
+
+if TYPE_CHECKING:
+    from models.invoice import Invoice
+
+
+class EmployeeRole(str, Enum):
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    EMPLOYEE = "EMPLOYEE"
 
 
 class Employee(Base):
@@ -23,6 +32,28 @@ class Employee(Base):
 
     name: Mapped[str] = mapped_column(
         String(150),
+        nullable=False,
+    )
+
+    username: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=False,
+    )
+
+    password_hash: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+
+    role: Mapped[EmployeeRole] = mapped_column(
+        SAEnum(EmployeeRole, native_enum=False),
+        default=EmployeeRole.EMPLOYEE,
         nullable=False,
     )
 
@@ -47,6 +78,7 @@ class Employee(Base):
             f"Employee("
             f"id={self.id}, "
             f"name='{self.name}', "
-            f"job_title='{self.job_title}'"
+            f"username='{self.username}', "
+            f"role='{self.role.value}'"
             f")"
         )
