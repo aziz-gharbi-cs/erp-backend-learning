@@ -20,7 +20,7 @@ class EmployeeRepository:
         stmt = select(Employee).where(Employee.id == employee_id)
         return self.session.scalar(stmt)
 
-    def get_by_name(self, name: str) -> list[Employee]:
+    def get_by_username(self, name: str) -> list[Employee]:
         stmt = select(Employee).where(Employee.name == name)
         return list(self.session.scalars(stmt))
 
