@@ -1,6 +1,10 @@
 from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.user import User
+from models.user import User
 if TYPE_CHECKING:
     from models.invoice import Invoice
 from sqlalchemy import Numeric, String
@@ -40,6 +44,10 @@ class Employee(Base):
 
     invoices: Mapped[list["Invoice"]] = relationship(
         back_populates="employee",
+    )
+    user: Mapped["User | None"] = relationship(
+    back_populates="employee",
+    uselist=False,
     )
 
     def __str__(self):
