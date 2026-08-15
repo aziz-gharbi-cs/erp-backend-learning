@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -10,6 +11,8 @@ from database.database import Base
 
 if TYPE_CHECKING:
     from models.invoice import Invoice
+
+from models.user import User
 
 
 class EmployeeRole(str, Enum):
@@ -71,6 +74,11 @@ class Employee(Base):
 
     invoices: Mapped[list["Invoice"]] = relationship(
         back_populates="employee",
+    )
+
+    user: Mapped["User | None"] = relationship(
+        back_populates="employee",
+        uselist=False,
     )
 
     def __str__(self):
