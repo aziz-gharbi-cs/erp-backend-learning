@@ -1,78 +1,75 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core.security import hash_password, verify_password
-from models.employee import Employee
-from repositories.employee_repository import EmployeeRepository
+from repositories.user_repository import UserRepository
 from schemas.auth_schema import RegisterRequest
+
+
+from models.user import User
 
 
 class AuthService:
 
     def __init__(self, session: Session):
         self.session = session
-        self.employee_repo = EmployeeRepository(session)
+        self.user_repo = UserRepository(session)
 
-    def register(self, request: RegisterRequest) -> Employee:
+    def register(self, request: RegisterRequest) -> "User":
 
-        existing_employee = self.employee_repo.get_by_username(
+        existing_user = self.user_repo.get_by_username(
             request.username
         )
 
-        if existing_employee:
+        if existing_user is not None:
             raise ValueError("Username already exists.")
 
-        employee = Employee(
+        user = User(
             username=request.username,
             password_hash=hash_password(request.password),
             name=request.name,
             email=request.email,
             phone_number=request.phone_number,
             address=request.address,
-            job_title=request.job_title,
             role=request.role,
         )
 
         try:
-
-            self.employee_repo.save(employee)
+            self.user_repo.save(user)
 
             self.session.commit()
+            self.session.refresh(user)
 
-            self.session.refresh(employee)
-
-            return employee
+            return user
 
         except IntegrityError:
-
             self.session.rollback()
-
-            raise ValueError("Employee already exists.")
+            raise ValueError("User already exists.")
 
         except Exception:
-
             self.session.rollback()
-
             raise
 
     def authenticate(
         self,
         username: str,
         password: str,
-    ) -> Employee:
+    ) -> "User":
 
-        employee = self.employee_repo.get_by_username(username)
+        user = self.user_repo.get_by_username(username)
 
-        if employee is None:
+        if user is None:
             raise ValueError("Invalid username or password.")
 
-        if not employee.is_active:
-            raise ValueError("Employee account is disabled.")
+        if not user.is_active:
+            raise ValueError("User account is disabled.")
 
         if not verify_password(
             password,
-            employee.password_hash,
+            user.password_hash,
         ):
             raise ValueError("Invalid username or password.")
 
-        return employee
+        return user

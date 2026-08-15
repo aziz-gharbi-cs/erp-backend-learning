@@ -20,14 +20,11 @@ class RegisterRequest(BaseModel):
 
     address: str | None = None
 
-    job_title: str
-
     role: str = "EMPLOYEE"
 
 
 class LoginRequest(BaseModel):
     username: str
-
     password: str
 
 
@@ -42,7 +39,7 @@ class TokenPayload(BaseModel):
     role: str | None = None
 
 
-class AuthenticatedEmployee(BaseModel):
+class AuthenticatedUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
