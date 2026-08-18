@@ -7,7 +7,13 @@ from database.database import get_db
 from models.user import User
 from repositories.user_repository import UserRepository
 
+from redis import Redis
 
+from core.redis import redis_client
+
+
+def get_redis() -> Redis:
+    return redis_client
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login",
 )

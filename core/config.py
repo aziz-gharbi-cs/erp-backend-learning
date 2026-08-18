@@ -17,7 +17,8 @@ class Settings(BaseSettings):
         env_file=".env",
         case_sensitive=True,
     )
-
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
 @lru_cache
 def get_settings() -> Settings:

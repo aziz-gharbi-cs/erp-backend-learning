@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import APIRouter as api_router, Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from database.database import get_db
@@ -27,6 +27,9 @@ from services.customer_service import CustomerService
 from services.employee_service import EmployeeService
 from services.invoice_service import InvoiceService
 from services.product_service import ProductService
+
+from api.redis import router as redis_router
+api_router.include_router(redis_router)
 
 app = FastAPI(title="ERP Backend API", version="1.0.0")
 
