@@ -3,6 +3,7 @@ from redis import Redis
 
 from core.dependencies import get_redis
 
+
 router = APIRouter(
     prefix="/redis",
     tags=["Redis"],
@@ -10,8 +11,14 @@ router = APIRouter(
 
 
 @router.get("/test")
-def test_redis(redis: Redis = Depends(get_redis)):
-    redis.set("api:test", "Hello from FastAPI", ex=60)
+def test_redis(
+    redis: Redis = Depends(get_redis),
+):
+    redis.set(
+        "api:test",
+        "Hello from FastAPI",
+        ex=60,
+    )
 
     return {
         "value": redis.get("api:test"),

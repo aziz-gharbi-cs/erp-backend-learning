@@ -1,9 +1,10 @@
 from typing import Any
 
-from fastapi import APIRouter as api_router, Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from database.database import get_db
+
 from schemas.customer_schema import (
     CustomerCreateRequest,
     CustomerResponse,
@@ -23,38 +24,68 @@ from schemas.product_schema import (
     ProductResponse,
     ProductUpdateRequest,
 )
+
 from services.customer_service import CustomerService
 from services.employee_service import EmployeeService
 from services.invoice_service import InvoiceService
 from services.product_service import ProductService
 
 from api.redis import router as redis_router
-api_router.include_router(redis_router)
 
-app = FastAPI(title="ERP Backend API", version="1.0.0")
+
+app = FastAPI(
+    title="ERP Backend API",
+    version="1.0.0",
+)
+
+app.include_router(redis_router)
 
 
 def _service_error_response(exc: ValueError) -> None:
     message = str(exc)
+
     if "not found" in message.lower():
-        raise HTTPException(status_code=404, detail=message) from exc
-    raise HTTPException(status_code=400, detail=message) from exc
+        raise HTTPException(
+            status_code=404,
+            detail=message,
+        ) from exc
+
+    raise HTTPException(
+        status_code=400,
+        detail=message,
+    ) from exc
 
 
 @app.get("/", response_model=dict[str, Any])
 def root() -> dict[str, Any]:
-    return {"message": "Welcome to the ERP Backend API!"}
+    return {
+        "message": "Welcome to the ERP Backend API!"
+    }
 
 
 @app.get("/health", response_model=dict[str, Any])
 def health() -> dict[str, Any]:
-    return {"status": "ok"}
+    return {
+        "status": "ok"
+    }
 
 
-@app.get("/customers", response_model=list[CustomerResponse])
-def list_customers(db: Session = Depends(get_db)) -> list[CustomerResponse]:
+# ============================================================
+# CUSTOMERS
+# ============================================================
+
+@app.get(
+    "/customers",
+    response_model=list[CustomerResponse],
+)
+def list_customers(
+    db: Session = Depends(get_db),
+) -> list[CustomerResponse]:
+
     service = CustomerService(db)
+
     customers = service.list_customers()
+
     return [
         CustomerResponse(
             id=customer.id,
@@ -68,9 +99,18 @@ def list_customers(db: Session = Depends(get_db)) -> list[CustomerResponse]:
     ]
 
 
-@app.post("/customers", status_code=201, response_model=CustomerResponse)
-def create_customer(payload: CustomerCreateRequest, db: Session = Depends(get_db)) -> CustomerResponse:
+@app.post(
+    "/customers",
+    status_code=201,
+    response_model=CustomerResponse,
+)
+def create_customer(
+    payload: CustomerCreateRequest,
+    db: Session = Depends(get_db),
+) -> CustomerResponse:
+
     service = CustomerService(db)
+
     try:
         customer = service.create_customer(
             name=payload.name,
@@ -79,8 +119,10 @@ def create_customer(payload: CustomerCreateRequest, db: Session = Depends(get_db
             address=payload.address,
             tax_registration_number=payload.tax_registration_number,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return CustomerResponse(
         id=customer.id,
         name=customer.name,
@@ -91,12 +133,25 @@ def create_customer(payload: CustomerCreateRequest, db: Session = Depends(get_db
     )
 
 
-@app.get("/customers/{customer_id}", response_model=CustomerResponse)
-def get_customer(customer_id: int, db: Session = Depends(get_db)) -> CustomerResponse:
+@app.get(
+    "/customers/{customer_id}",
+    response_model=CustomerResponse,
+)
+def get_customer(
+    customer_id: int,
+    db: Session = Depends(get_db),
+) -> CustomerResponse:
+
     service = CustomerService(db)
+
     customer = service.get_customer(customer_id)
+
     if customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Customer not found",
+        )
+
     return CustomerResponse(
         id=customer.id,
         name=customer.name,
@@ -107,9 +162,18 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)) -> CustomerRes
     )
 
 
-@app.put("/customers/{customer_id}", response_model=CustomerResponse)
-def update_customer(customer_id: int, payload: CustomerUpdateRequest, db: Session = Depends(get_db)) -> CustomerResponse:
+@app.put(
+    "/customers/{customer_id}",
+    response_model=CustomerResponse,
+)
+def update_customer(
+    customer_id: int,
+    payload: CustomerUpdateRequest,
+    db: Session = Depends(get_db),
+) -> CustomerResponse:
+
     service = CustomerService(db)
+
     try:
         customer = service.update_customer(
             customer_id=customer_id,
@@ -119,8 +183,10 @@ def update_customer(customer_id: int, payload: CustomerUpdateRequest, db: Sessio
             address=payload.address,
             tax_registration_number=payload.tax_registration_number,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return CustomerResponse(
         id=customer.id,
         name=customer.name,
@@ -131,19 +197,40 @@ def update_customer(customer_id: int, payload: CustomerUpdateRequest, db: Sessio
     )
 
 
-@app.delete("/customers/{customer_id}", status_code=204)
-def delete_customer(customer_id: int, db: Session = Depends(get_db)) -> None:
+@app.delete(
+    "/customers/{customer_id}",
+    status_code=204,
+)
+def delete_customer(
+    customer_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+
     service = CustomerService(db)
+
     try:
         service.delete_customer(customer_id)
+
     except ValueError as exc:
         _service_error_response(exc)
 
 
-@app.get("/employees", response_model=list[EmployeeResponse])
-def list_employees(db: Session = Depends(get_db)) -> list[EmployeeResponse]:
+# ============================================================
+# EMPLOYEES
+# ============================================================
+
+@app.get(
+    "/employees",
+    response_model=list[EmployeeResponse],
+)
+def list_employees(
+    db: Session = Depends(get_db),
+) -> list[EmployeeResponse]:
+
     service = EmployeeService(db)
+
     employees = service.list_employees()
+
     return [
         EmployeeResponse(
             id=employee.id,
@@ -158,9 +245,18 @@ def list_employees(db: Session = Depends(get_db)) -> list[EmployeeResponse]:
     ]
 
 
-@app.post("/employees", status_code=201, response_model=EmployeeResponse)
-def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db)) -> EmployeeResponse:
+@app.post(
+    "/employees",
+    status_code=201,
+    response_model=EmployeeResponse,
+)
+def create_employee(
+    payload: EmployeeCreateRequest,
+    db: Session = Depends(get_db),
+) -> EmployeeResponse:
+
     service = EmployeeService(db)
+
     try:
         employee = service.create_employee(
             name=payload.name,
@@ -171,8 +267,10 @@ def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db
             is_active=payload.is_active,
             role=payload.role,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
@@ -184,12 +282,25 @@ def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db
     )
 
 
-@app.get("/employees/{employee_id}", response_model=EmployeeResponse)
-def get_employee(employee_id: int, db: Session = Depends(get_db)) -> EmployeeResponse:
+@app.get(
+    "/employees/{employee_id}",
+    response_model=EmployeeResponse,
+)
+def get_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+) -> EmployeeResponse:
+
     service = EmployeeService(db)
+
     employee = service.get_employee(employee_id)
+
     if employee is None:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found",
+        )
+
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
@@ -201,9 +312,18 @@ def get_employee(employee_id: int, db: Session = Depends(get_db)) -> EmployeeRes
     )
 
 
-@app.put("/employees/{employee_id}", response_model=EmployeeResponse)
-def update_employee(employee_id: int, payload: EmployeeUpdateRequest, db: Session = Depends(get_db)) -> EmployeeResponse:
+@app.put(
+    "/employees/{employee_id}",
+    response_model=EmployeeResponse,
+)
+def update_employee(
+    employee_id: int,
+    payload: EmployeeUpdateRequest,
+    db: Session = Depends(get_db),
+) -> EmployeeResponse:
+
     service = EmployeeService(db)
+
     try:
         employee = service.update_employee(
             employee_id=employee_id,
@@ -215,8 +335,10 @@ def update_employee(employee_id: int, payload: EmployeeUpdateRequest, db: Sessio
             is_active=payload.is_active,
             role=payload.role,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return EmployeeResponse(
         id=employee.id,
         name=employee.name,
@@ -228,19 +350,40 @@ def update_employee(employee_id: int, payload: EmployeeUpdateRequest, db: Sessio
     )
 
 
-@app.delete("/employees/{employee_id}", status_code=204)
-def delete_employee(employee_id: int, db: Session = Depends(get_db)) -> None:
+@app.delete(
+    "/employees/{employee_id}",
+    status_code=204,
+)
+def delete_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+
     service = EmployeeService(db)
+
     try:
         service.delete_employee(employee_id)
+
     except ValueError as exc:
         _service_error_response(exc)
 
 
-@app.get("/products", response_model=list[ProductResponse])
-def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
+# ============================================================
+# PRODUCTS
+# ============================================================
+
+@app.get(
+    "/products",
+    response_model=list[ProductResponse],
+)
+def list_products(
+    db: Session = Depends(get_db),
+) -> list[ProductResponse]:
+
     service = ProductService(db)
+
     products = service.list_products()
+
     return [
         ProductResponse(
             id=product.id,
@@ -255,9 +398,18 @@ def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
     ]
 
 
-@app.post("/products", status_code=201, response_model=ProductResponse)
-def create_product(payload: ProductCreateRequest, db: Session = Depends(get_db)) -> ProductResponse:
+@app.post(
+    "/products",
+    status_code=201,
+    response_model=ProductResponse,
+)
+def create_product(
+    payload: ProductCreateRequest,
+    db: Session = Depends(get_db),
+) -> ProductResponse:
+
     service = ProductService(db)
+
     try:
         product = service.create_product(
             reference=payload.reference,
@@ -267,8 +419,10 @@ def create_product(payload: ProductCreateRequest, db: Session = Depends(get_db))
             tax_rate=payload.tax_rate,
             stock_quantity=payload.stock_quantity,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return ProductResponse(
         id=product.id,
         reference=product.reference,
@@ -280,12 +434,25 @@ def create_product(payload: ProductCreateRequest, db: Session = Depends(get_db))
     )
 
 
-@app.get("/products/{product_id}", response_model=ProductResponse)
-def get_product(product_id: int, db: Session = Depends(get_db)) -> ProductResponse:
+@app.get(
+    "/products/{product_id}",
+    response_model=ProductResponse,
+)
+def get_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+) -> ProductResponse:
+
     service = ProductService(db)
+
     product = service.get_product(product_id)
+
     if product is None:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+
     return ProductResponse(
         id=product.id,
         reference=product.reference,
@@ -297,9 +464,18 @@ def get_product(product_id: int, db: Session = Depends(get_db)) -> ProductRespon
     )
 
 
-@app.put("/products/{product_id}", response_model=ProductResponse)
-def update_product(product_id: int, payload: ProductUpdateRequest, db: Session = Depends(get_db)) -> ProductResponse:
+@app.put(
+    "/products/{product_id}",
+    response_model=ProductResponse,
+)
+def update_product(
+    product_id: int,
+    payload: ProductUpdateRequest,
+    db: Session = Depends(get_db),
+) -> ProductResponse:
+
     service = ProductService(db)
+
     try:
         product = service.update_product(
             product_id=product_id,
@@ -310,8 +486,10 @@ def update_product(product_id: int, payload: ProductUpdateRequest, db: Session =
             tax_rate=payload.tax_rate,
             stock_quantity=payload.stock_quantity,
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return ProductResponse(
         id=product.id,
         reference=product.reference,
@@ -323,19 +501,40 @@ def update_product(product_id: int, payload: ProductUpdateRequest, db: Session =
     )
 
 
-@app.delete("/products/{product_id}", status_code=204)
-def delete_product(product_id: int, db: Session = Depends(get_db)) -> None:
+@app.delete(
+    "/products/{product_id}",
+    status_code=204,
+)
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+
     service = ProductService(db)
+
     try:
         service.delete_product(product_id)
+
     except ValueError as exc:
         _service_error_response(exc)
 
 
-@app.get("/invoices", response_model=list[InvoiceResponse])
-def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceResponse]:
+# ============================================================
+# INVOICES
+# ============================================================
+
+@app.get(
+    "/invoices",
+    response_model=list[InvoiceResponse],
+)
+def list_invoices(
+    db: Session = Depends(get_db),
+) -> list[InvoiceResponse]:
+
     service = InvoiceService(db)
+
     invoices = service.list_invoices()
+
     return [
         InvoiceResponse(
             id=invoice.id,
@@ -350,9 +549,18 @@ def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceResponse]:
     ]
 
 
-@app.post("/invoices", status_code=201, response_model=InvoiceResponse)
-def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db)) -> InvoiceResponse:
+@app.post(
+    "/invoices",
+    status_code=201,
+    response_model=InvoiceResponse,
+)
+def create_invoice(
+    payload: InvoiceCreateRequest,
+    db: Session = Depends(get_db),
+) -> InvoiceResponse:
+
     service = InvoiceService(db)
+
     try:
         invoice = service.create_invoice(
             customer_id=payload.customer_id,
@@ -367,8 +575,10 @@ def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db))
                 for line in payload.sale_lines
             ],
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return InvoiceResponse(
         id=invoice.id,
         invoice_number=invoice.invoice_number,
@@ -380,12 +590,25 @@ def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db))
     )
 
 
-@app.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
-def get_invoice(invoice_id: int, db: Session = Depends(get_db)) -> InvoiceResponse:
+@app.get(
+    "/invoices/{invoice_id}",
+    response_model=InvoiceResponse,
+)
+def get_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+) -> InvoiceResponse:
+
     service = InvoiceService(db)
+
     invoice = service.get_invoice(invoice_id)
+
     if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
+
     return InvoiceResponse(
         id=invoice.id,
         invoice_number=invoice.invoice_number,
@@ -397,9 +620,18 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)) -> InvoiceRespon
     )
 
 
-@app.put("/invoices/{invoice_id}", response_model=InvoiceResponse)
-def update_invoice(invoice_id: int, payload: InvoiceCreateRequest, db: Session = Depends(get_db)) -> InvoiceResponse:
+@app.put(
+    "/invoices/{invoice_id}",
+    response_model=InvoiceResponse,
+)
+def update_invoice(
+    invoice_id: int,
+    payload: InvoiceCreateRequest,
+    db: Session = Depends(get_db),
+) -> InvoiceResponse:
+
     service = InvoiceService(db)
+
     try:
         invoice = service.update_invoice(
             invoice_id=invoice_id,
@@ -415,8 +647,10 @@ def update_invoice(invoice_id: int, payload: InvoiceCreateRequest, db: Session =
                 for line in payload.sale_lines
             ],
         )
+
     except ValueError as exc:
         _service_error_response(exc)
+
     return InvoiceResponse(
         id=invoice.id,
         invoice_number=invoice.invoice_number,
@@ -428,11 +662,19 @@ def update_invoice(invoice_id: int, payload: InvoiceCreateRequest, db: Session =
     )
 
 
-@app.delete("/invoices/{invoice_id}", status_code=204)
-def delete_invoice(invoice_id: int, db: Session = Depends(get_db)) -> None:
+@app.delete(
+    "/invoices/{invoice_id}",
+    status_code=204,
+)
+def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+
     service = InvoiceService(db)
+
     try:
         service.delete_invoice(invoice_id)
+
     except ValueError as exc:
         _service_error_response(exc)
-
