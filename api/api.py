@@ -464,6 +464,7 @@ def get_product(
     )
 
 
+
 @app.put(
     "/products/{product_id}",
     response_model=ProductResponse,
